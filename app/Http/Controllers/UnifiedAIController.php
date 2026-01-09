@@ -150,8 +150,7 @@ class UnifiedAIController extends Controller
         $apiKey = config('services.claude.api_key');
         $model = config('services.claude.model');
 
-        // Default endpoint for Anthropic streaming (may be adjusted via config)
-        $url = config('services.claude.endpoint', 'https://api.anthropic.com/v1/stream');
+        $url = config('services.claude.endpoint');
 
         $claudeVersion = config('services.claude.version');
 
@@ -168,7 +167,6 @@ class UnifiedAIController extends Controller
             ->withHeaders($headers)
             ->post($url, [
                 'model' => $model,
-                // Use the messages format if endpoint supports it
                 'messages' => [
                     ['role' => 'user', 'content' => $userMessage],
                 ],
@@ -185,21 +183,17 @@ class UnifiedAIController extends Controller
 
             $trim = trim($line);
 
-            // Ignore SSE event name lines like "event: content_block_delta"
             if (str_starts_with($trim, 'event:')) {
                 continue;
             }
 
-            // Handle SSE data lines
             if (str_starts_with($trim, 'data:')) {
                 $jsonStr = trim(substr($trim, 6));
                 if ($jsonStr === '[DONE]') break;
 
                 $data = json_decode($jsonStr, true);
                 if (is_array($data)) {
-                    // Only yield actual text deltas from content_block_delta
                     if (($data['type'] ?? '') === 'content_block_delta') {
-                        // Anthropic deltas use ['delta']['text'] (or ['delta']['type']+['delta']['text'])
                         $text = $data['delta']['text'] ?? ($data['delta']['text_delta'] ?? null);
                         if ($text !== null && $text !== '') {
                             yield $text;
@@ -210,7 +204,6 @@ class UnifiedAIController extends Controller
                 continue;
             }
 
-            // If the line itself is pure JSON (no 'data:'), try to extract deltas
             $decoded = json_decode($trim, true);
             if (is_array($decoded)) {
                 if (($decoded['type'] ?? '') === 'content_block_delta') {
@@ -222,7 +215,6 @@ class UnifiedAIController extends Controller
                 }
             }
 
-            // Otherwise ignore non-data/non-json lines (pings, event names, etc.)
             continue;
         }
     }

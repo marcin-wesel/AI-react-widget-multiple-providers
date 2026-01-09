@@ -2,15 +2,12 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useChatStream } from '../hooks/use-chat-stream';
 import './ChatComponent.css';
 
-// 1. Definicja typu pojedynczej wiadomości
-// Określa, jakich pól spodziewamy się w obiekcie 'msg'
 export interface ChatMessage {
-    role: 'user' | 'assistant' | 'system' | string; // Możesz zawęzić typy ról, jeśli je znasz
+    role: 'user' | 'assistant' | 'system' | string;
     content: string;
 }
 
 const ChatComponent: React.FC = () => {
-    // Zakładamy, że hook useChatStream jest już otypowany lub zwraca kompatybilne dane
     const { messages, sendMessage, isStreaming, error } = useChatStream();
     
     const [input, setInput] = useState<string>('');
@@ -32,15 +29,12 @@ const ChatComponent: React.FC = () => {
         }
     }, [minimized]);
     
-    // 2. Typowanie useRef dla elementu HTML (div)
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    // Auto-scroll do dołu przy nowej wiadomości
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
 
-    // 3. Typowanie zdarzenia wysłania formularza
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!input.trim() || isStreaming) return;
@@ -76,18 +70,15 @@ const ChatComponent: React.FC = () => {
                     <div className="empty-state">Rozpocznij rozmowę...</div>
                 )}
                 
-                {/* 4. Mapowanie z jawnym typem (opcjonalne, jeśli TS wywnioskuje to z hooka) */}
                 {messages.map((msg: ChatMessage, index: number) => (
                     <div key={index} className={`message-row ${msg.role}`}>
                         <div className="message-bubble">
-                            {/* Tutaj trafia treść wiadomości */}
                             {msg.content}
                         </div>
                     </div>
                 ))}
 
                 {error && <div className="error-msg">{error}</div>}
-                {/* Ref przypisany do konkretnego elementu */}
                 <div ref={messagesEndRef} />
             </div>
 
@@ -95,7 +86,6 @@ const ChatComponent: React.FC = () => {
                 <input
                     type="text"
                     value={input}
-                    // TypeScript automatycznie wie, że 'e' to ChangeEvent dla inputa
                     onChange={(e) => setInput(e.target.value)}
                     placeholder="Wpisz wiadomość..."
                     disabled={isStreaming}

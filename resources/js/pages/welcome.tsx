@@ -1,6 +1,6 @@
 import { dashboard, login, register } from '@/routes';
 import { type SharedData } from '@/types';
-import ChatComponent from '@/components/chat-component'; // Dostosuj ścieżkę
+import ChatComponent from '@/components/chat-component';
 import { Head, Link, usePage } from '@inertiajs/react';
 
 export default function Welcome({
@@ -98,10 +98,11 @@ export default function Welcome({
                                             <span className="h-1.5 w-1.5 rounded-full bg-[#dbdbd7] dark:bg-[#3E3E3A]" />
                                         </span>
                                     </span>
-                                    {/* Tutaj wstawiasz Czat - będzie widoczny na każdej stronie używającej tego layoutu */}
-            <div className="fixed bottom-4 right-4 z-50">
-                <ChatComponent />
-            </div>
+                                    
+                                    <div className="fixed bottom-4 right-4 z-50">
+                                        <ChatComponent />
+                                    </div>
+
                                     <span>
                                         Watch video tutorials at
                                         <a
