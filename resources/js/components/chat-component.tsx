@@ -19,7 +19,7 @@ const ChatComponent: React.FC = () => {
         try {
             const raw = localStorage.getItem('chat_minimized');
             return raw === '1';
-        } catch (e) {
+        } catch {
             return false;
         }
     });
@@ -27,7 +27,7 @@ const ChatComponent: React.FC = () => {
     useEffect(() => {
         try {
             localStorage.setItem('chat_minimized', minimized ? '1' : '0');
-        } catch (e) {
+        } catch {
             // ignore
         }
     }, [minimized]);
