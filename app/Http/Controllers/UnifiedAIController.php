@@ -14,17 +14,21 @@ class UnifiedAIController extends Controller
         $request->validate([
             'message' => 'required|string',
             'provider' => 'required|string|in:openai,azure,claude',
+            'history' => 'nullable|array',
+            'history.*.role' => 'required|string|in:user,assistant,system',
+            'history.*.content' => 'required|string',
         ]);
 
         $message = $request->input('message') ?? 'Opowiedz krótki żart';
         $provider = $request->input('provider') ?? 'azure';
+        $history = $request->input('history', []);
 
-        return response()->stream(function () use ($provider, $message) {
+        return response()->stream(function () use ($provider, $message, $history) {
 
             $stream = match ($provider) {
-                'azure'  => $this->streamAzureOpenAI($message),
-                'openai' => $this->streamOpenAI($message),
-                'claude' => $this->streamClaude($message),
+                'azure'  => $this->streamAzureOpenAI($message, $history),
+                'openai' => $this->streamOpenAI($message, $history),
+                'claude' => $this->streamClaude($message, $history),
                 default  => throw new Exception("Provider not supported"),
             };
 
@@ -57,7 +61,51 @@ class UnifiedAIController extends Controller
         ]);
     }
 
-    private function streamAzureOpenAI(string $userMessage)
+    private function buildOpenAIMessages(string $userMessage, array $history = []): array
+    {
+        $messages = [];
+        
+        // Add history messages
+        foreach ($history as $historyItem) {
+            $messages[] = [
+                'role' => $historyItem['role'],
+                'content' => $historyItem['content'],
+            ];
+        }
+        
+        // Add current user message
+        $messages[] = [
+            'role' => 'user',
+            'content' => $userMessage,
+        ];
+        
+        return $messages;
+    }
+
+    private function buildClaudeMessages(string $userMessage, array $history = []): array
+    {
+        $messages = [];
+        
+        // Add history messages (filter out 'system' role as Claude handles it differently)
+        foreach ($history as $historyItem) {
+            if (in_array($historyItem['role'], ['user', 'assistant'])) {
+                $messages[] = [
+                    'role' => $historyItem['role'],
+                    'content' => $historyItem['content'],
+                ];
+            }
+        }
+        
+        // Add current user message
+        $messages[] = [
+            'role' => 'user',
+            'content' => $userMessage,
+        ];
+        
+        return $messages;
+    }
+
+    private function streamAzureOpenAI(string $userMessage, array $history = [])
     {
         $resource = config('services.azure_openai.resource_name');
         $deployment = config('services.azure_openai.deployment_id');
@@ -72,9 +120,7 @@ class UnifiedAIController extends Controller
                 'Authorization' => "Bearer {$apiKey}", 
                 
             ])->post($url, [
-                'messages' => [
-                    ['role' => 'user', 'content' => $userMessage],
-                ],
+                'messages' => $this->buildOpenAIMessages($userMessage, $history),
                 'model' => $deployment,
                 'max_completion_tokens' => 13107,
                 'temperature' => 1,
@@ -103,7 +149,7 @@ class UnifiedAIController extends Controller
         }
     }
 
-    private function streamOpenAI(string $userMessage)
+    private function streamOpenAI(string $userMessage, array $history = [])
     {
         $apiKey = config('services.openai.api_key');
         $model = config('services.openai.model');
@@ -116,9 +162,7 @@ class UnifiedAIController extends Controller
                 'Authorization' => "Bearer {$apiKey}",
             ])->post($url, [
                 'model' => $model,
-                'messages' => [
-                    ['role' => 'user', 'content' => $userMessage],
-                ],
+                'messages' => $this->buildOpenAIMessages($userMessage, $history),
                 'temperature' => 1,
                 'top_p' => 1,
                 'frequency_penalty' => 0,
@@ -145,7 +189,7 @@ class UnifiedAIController extends Controller
         }
     }
 
-    private function streamClaude(string $userMessage)
+    private function streamClaude(string $userMessage, array $history = [])
     {
         $apiKey = config('services.claude.api_key');
         $model = config('services.claude.model');
@@ -167,9 +211,7 @@ class UnifiedAIController extends Controller
             ->withHeaders($headers)
             ->post($url, [
                 'model' => $model,
-                'messages' => [
-                    ['role' => 'user', 'content' => $userMessage],
-                ],
+                'messages' => $this->buildClaudeMessages($userMessage, $history),
                 'max_tokens' => 1024,
                 'temperature' => 1,
                 'stream' => true,

@@ -7,9 +7,10 @@ export interface ChatMessage {
 
 interface UseChatStreamReturn {
     messages: ChatMessage[];
-    sendMessage: (userMessage: string, provider?: 'azure' | 'openai' | 'claude') => Promise<void>;
+    sendMessage: (userMessage: string, provider?: 'azure' | 'openai' | 'claude', includeHistory?: boolean) => Promise<void>;
     isStreaming: boolean;
     error: string | null;
+    clearMessages: () => void;
 }
 
 export function useChatStream(): UseChatStreamReturn {
@@ -17,7 +18,7 @@ export function useChatStream(): UseChatStreamReturn {
     const [isStreaming, setIsStreaming] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
 
-    const sendMessage = async (userMessage: string, provider: 'azure' | 'openai' | 'claude' = 'azure') => {
+    const sendMessage = async (userMessage: string, provider: 'azure' | 'openai' | 'claude' = 'azure', includeHistory: boolean = false) => {
         setIsStreaming(true);
         setError(null);
         setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
@@ -31,6 +32,20 @@ export function useChatStream(): UseChatStreamReturn {
                 console.warn('Brak tokena CSRF');
             }
 
+            // Prepare history if includeHistory is true
+            let history: ChatMessage[] = [];
+            if (includeHistory) {
+                setMessages(prev => {
+                    // Filter out empty messages and limit to last 20 messages
+                    const filteredHistory = prev
+                        .slice(0, -2) // Exclude the just-added user message and placeholder assistant message
+                        .filter(msg => msg.content.trim() !== '')
+                        .slice(-20); // Limit to last 20 messages
+                    history = filteredHistory;
+                    return prev;
+                });
+            }
+
             const response = await fetch('/unified-chat', {
                 method: 'POST',
                 headers: {
@@ -39,7 +54,8 @@ export function useChatStream(): UseChatStreamReturn {
                 },
                 body: JSON.stringify({
                     provider,
-                    message: userMessage
+                    message: userMessage,
+                    ...(includeHistory && history.length > 0 && { history })
                 })
             });
 
@@ -101,5 +117,10 @@ export function useChatStream(): UseChatStreamReturn {
         }
     };
 
-    return { messages, sendMessage, isStreaming, error };
+    const clearMessages = () => {
+        setMessages([]);
+        setError(null);
+    };
+
+    return { messages, sendMessage, isStreaming, error, clearMessages };
 }
