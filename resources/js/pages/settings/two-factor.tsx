@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useTwoFactorAuth } from '@/hooks/use-two-factor-auth';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
+import { useTranslations } from '@/locales';
 import { disable, enable, show } from '@/routes/two-factor';
 import { type BreadcrumbItem } from '@/types';
 import { Form, Head } from '@inertiajs/react';
@@ -17,17 +18,11 @@ interface TwoFactorProps {
     twoFactorEnabled?: boolean;
 }
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Two-Factor Authentication',
-        href: show.url(),
-    },
-];
-
 export default function TwoFactor({
     requiresConfirmation = false,
     twoFactorEnabled = false,
 }: TwoFactorProps) {
+    const { t } = useTranslations();
     const {
         qrCodeSvg,
         hasSetupData,
@@ -40,16 +35,23 @@ export default function TwoFactor({
     } = useTwoFactorAuth();
     const [showSetupModal, setShowSetupModal] = useState<boolean>(false);
 
+    const breadcrumbs: BreadcrumbItem[] = [
+        {
+            title: t('settings.twoFactor.title'),
+            href: show.url(),
+        },
+    ];
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Two-Factor Authentication" />
+            <Head title={t('settings.twoFactor.title')} />
 
             <h1 className="sr-only">Two-Factor Authentication Settings</h1>
 
             <SettingsLayout>
                 <div className="space-y-6">
                     <HeadingSmall
-                        title="Two-Factor Authentication"
+                        title={t('settings.twoFactor.title')}
                         description="Manage your two-factor authentication settings"
                     />
                     {twoFactorEnabled ? (

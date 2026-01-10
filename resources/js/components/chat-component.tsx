@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useChatStream } from '../hooks/use-chat-stream';
+import { useTranslations } from '@/locales';
 import './ChatComponent.css';
 
 export interface ChatMessage {
@@ -8,6 +9,7 @@ export interface ChatMessage {
 }
 
 const ChatComponent: React.FC = () => {
+    const { t } = useTranslations();
     const { messages, sendMessage, isStreaming, error, clearMessages } = useChatStream();
     
     const [input, setInput] = useState<string>('');
@@ -60,7 +62,7 @@ const ChatComponent: React.FC = () => {
     };
 
     const handleClearMessages = () => {
-        if (confirm('Czy na pewno chcesz wyczyścić historię rozmowy?')) {
+        if (confirm(t('chat.clearHistoryConfirm'))) {
             clearMessages();
         }
     };
@@ -71,14 +73,14 @@ const ChatComponent: React.FC = () => {
     return (
         <div className={`chat-container ${minimized ? 'minimized' : ''}`}>
             <div className={`chat-header ${minimized ? 'minimized' : ''}`}>
-                <h3>Asystent AI {provider === 'azure' ? '(Azure)' : provider === 'openai' ? '(OpenAI)' : '(Claude)'}</h3>
+                <h3>{t('chat.title')} {provider === 'azure' ? `(${t('chat.providers.azure')})` : provider === 'openai' ? `(${t('chat.providers.openai')})` : `(${t('chat.providers.claude')})`}</h3>
 
                 <div className="provider-controls">
-                    <label htmlFor="provider-select">Provider:</label>
+                    <label htmlFor="provider-select">{t('chat.providerLabel')}</label>
                     <select id="provider-select" value={provider} onChange={(e) => setProvider(e.target.value as 'azure' | 'openai' | 'claude')}>
-                        <option value="azure">Azure OpenAI</option>
-                        <option value="openai">OpenAI API</option>
-                        <option value="claude">Claude (Anthropic)</option>
+                        <option value="azure">{t('chat.providers.azure')}</option>
+                        <option value="openai">{t('chat.providers.openai')}</option>
+                        <option value="claude">{t('chat.providers.claude')}</option>
                     </select>
                 </div>
 
@@ -91,14 +93,14 @@ const ChatComponent: React.FC = () => {
                             onChange={(e) => setIncludeHistory(e.target.checked)}
                         />
                         <span className="history-toggle-text">
-                            {includeHistory ? '📝' : '📄'} Historia
+                            {includeHistory ? '📝' : '📄'} {t('chat.historyLabel')}
                         </span>
                     </label>
                     {messages.length > 0 && (
                         <button 
                             className="clear-history-btn" 
                             onClick={handleClearMessages}
-                            title="Wyczyść historię"
+                            title={t('chat.clearHistoryTitle')}
                         >
                             🗑️
                         </button>
@@ -116,7 +118,7 @@ const ChatComponent: React.FC = () => {
 
             {includeHistory && messageCount > 0 && !minimized && (
                 <div className="history-status">
-                    <span className="history-indicator">💬 {messageCount} {messageCount === 1 ? 'wiadomość' : messageCount < 5 ? 'wiadomości' : 'wiadomości'} w kontekście</span>
+                    <span className="history-indicator">💬 {messageCount} {t('chat.messagesInContext')}</span>
                 </div>
             )}
 
@@ -142,11 +144,11 @@ const ChatComponent: React.FC = () => {
                     type="text"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    placeholder="Wpisz wiadomość..."
+                    placeholder={t('chat.inputPlaceholder')}
                     disabled={isStreaming}
                 />
                 <button type="submit" disabled={isStreaming || !input.trim()}>
-                    {isStreaming ? 'Piszę...' : 'Wyślij'}
+                    {isStreaming ? 'Piszę...' : t('chat.sendButton')}
                 </button>
             </form>
         </div>
