@@ -21,6 +21,16 @@ export function useChatStream(): UseChatStreamReturn {
     const sendMessage = async (userMessage: string, provider: 'azure' | 'openai' | 'claude' = 'azure', includeHistory: boolean = false) => {
         setIsStreaming(true);
         setError(null);
+
+        // Prepare history if includeHistory is true, before adding new messages
+        let history: ChatMessage[] = [];
+        if (includeHistory) {
+            // Filter out empty messages and limit to last 20 messages
+            history = messages
+                .filter(msg => msg.content.trim() !== '')
+                .slice(-20); // Limit to last 20 messages
+        }
+
         setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
         setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
 
@@ -30,20 +40,6 @@ export function useChatStream(): UseChatStreamReturn {
 
             if (!csrfToken) {
                 console.warn('Brak tokena CSRF');
-            }
-
-            // Prepare history if includeHistory is true
-            let history: ChatMessage[] = [];
-            if (includeHistory) {
-                setMessages(prev => {
-                    // Filter out empty messages and limit to last 20 messages
-                    const filteredHistory = prev
-                        .slice(0, -2) // Exclude the just-added user message and placeholder assistant message
-                        .filter(msg => msg.content.trim() !== '')
-                        .slice(-20); // Limit to last 20 messages
-                    history = filteredHistory;
-                    return prev;
-                });
             }
 
             const response = await fetch('/unified-chat', {
