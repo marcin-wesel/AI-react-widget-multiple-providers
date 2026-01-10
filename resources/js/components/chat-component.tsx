@@ -8,10 +8,18 @@ export interface ChatMessage {
 }
 
 const ChatComponent: React.FC = () => {
-    const { messages, sendMessage, isStreaming, error } = useChatStream();
+    const { messages, sendMessage, isStreaming, error, clearMessages } = useChatStream();
     
     const [input, setInput] = useState<string>('');
     const [provider, setProvider] = useState<'azure' | 'openai' | 'claude'>('azure');
+    const [includeHistory, setIncludeHistory] = useState<boolean>(() => {
+        try {
+            const raw = localStorage.getItem('chat_include_history');
+            return raw === '1';
+        } catch {
+            return false;
+        }
+    });
     const [minimized, setMinimized] = useState<boolean>(() => {
         try {
             const raw = localStorage.getItem('chat_minimized');
@@ -28,6 +36,14 @@ const ChatComponent: React.FC = () => {
             // ignore
         }
     }, [minimized]);
+
+    useEffect(() => {
+        try {
+            localStorage.setItem('chat_include_history', includeHistory ? '1' : '0');
+        } catch {
+            // ignore
+        }
+    }, [includeHistory]);
     
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -39,9 +55,18 @@ const ChatComponent: React.FC = () => {
         e.preventDefault();
         if (!input.trim() || isStreaming) return;
 
-        sendMessage(input, provider);
+        sendMessage(input, provider, includeHistory);
         setInput('');
     };
+
+    const handleClearMessages = () => {
+        if (confirm('Czy na pewno chcesz wyczyścić historię rozmowy?')) {
+            clearMessages();
+        }
+    };
+
+    // Calculate the number of messages in context
+    const messageCount = messages.filter(msg => msg.content.trim() !== '').length;
 
     return (
         <div className={`chat-container ${minimized ? 'minimized' : ''}`}>
@@ -56,6 +81,30 @@ const ChatComponent: React.FC = () => {
                         <option value="claude">Claude (Anthropic)</option>
                     </select>
                 </div>
+
+                <div className="history-controls">
+                    <label className="history-toggle-label">
+                        <input 
+                            type="checkbox" 
+                            className="history-checkbox"
+                            checked={includeHistory}
+                            onChange={(e) => setIncludeHistory(e.target.checked)}
+                        />
+                        <span className="history-toggle-text">
+                            {includeHistory ? '📝' : '📄'} Historia
+                        </span>
+                    </label>
+                    {messages.length > 0 && (
+                        <button 
+                            className="clear-history-btn" 
+                            onClick={handleClearMessages}
+                            title="Wyczyść historię"
+                        >
+                            🗑️
+                        </button>
+                    )}
+                </div>
+
                 <button
                     className="minimize-toggle"
                     aria-label={minimized ? 'Expand chat' : 'Minimize chat'}
@@ -64,6 +113,12 @@ const ChatComponent: React.FC = () => {
                     {minimized ? '➕' : '➖'}
                 </button>
             </div>
+
+            {includeHistory && messageCount > 0 && !minimized && (
+                <div className="history-status">
+                    <span className="history-indicator">💬 {messageCount} {messageCount === 1 ? 'wiadomość' : messageCount < 5 ? 'wiadomości' : 'wiadomości'} w kontekście</span>
+                </div>
+            )}
 
             <div className={`messages-list ${minimized ? 'hidden' : ''}`}>
                 {messages.length === 0 && (

@@ -78,6 +78,10 @@
     display: none;
 }
 
+.chat-container.minimized .history-controls {
+    display: none;
+}
+
 .chat-container.minimized .minimize-toggle {
     display: block;
     position: absolute;
@@ -202,4 +206,124 @@
 .chat-input-area button:disabled {
     background-color: #ccc;
     cursor: not-allowed;
+}
+
+/* History Controls */
+.history-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.history-toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: #333;
+    font-weight: 500;
+    user-select: none;
+}
+
+.history-checkbox {
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+}
+
+.history-toggle-text {
+    white-space: nowrap;
+}
+
+.clear-history-btn {
+    background: transparent;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 4px 8px;
+    transition: all 0.2s;
+}
+
+.clear-history-btn:hover {
+    background: #fee;
+    border-color: #fcc;
+}
+
+.history-status {
+    padding: 8px 15px;
+    background: #f0f8ff;
+    border-bottom: 1px solid #d0e8ff;
+    font-size: 0.85rem;
+    color: #0066cc;
+    text-align: center;
+}
+
+.history-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .chat-container {
+        max-width: 100%;
+        margin: 0;
+        border-radius: 0;
+    }
+
+    .chat-header {
+        flex-wrap: wrap;
+        padding: 12px;
+    }
+
+    .provider-controls {
+        order: 3;
+        width: 100%;
+        margin-left: 0;
+        margin-top: 8px;
+    }
+
+    .history-controls {
+        margin-left: 8px;
+    }
+
+    .history-toggle-text {
+        font-size: 0.85rem;
+    }
+
+    .clear-history-btn {
+        padding: 3px 6px;
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .chat-container {
+        height: 100vh;
+    }
+
+    .history-controls {
+        flex-direction: column;
+        gap: 4px;
+        align-items: flex-start;
+    }
+
+    .history-status {
+        font-size: 0.8rem;
+        padding: 6px 10px;
+    }
 }

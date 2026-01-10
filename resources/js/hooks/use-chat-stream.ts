@@ -7,9 +7,10 @@ export interface ChatMessage {
 
 interface UseChatStreamReturn {
     messages: ChatMessage[];
-    sendMessage: (userMessage: string, provider?: 'azure' | 'openai' | 'claude') => Promise<void>;
+    sendMessage: (userMessage: string, provider?: 'azure' | 'openai' | 'claude', includeHistory?: boolean) => Promise<void>;
     isStreaming: boolean;
     error: string | null;
+    clearMessages: () => void;
 }
 
 export function useChatStream(): UseChatStreamReturn {
@@ -17,9 +18,19 @@ export function useChatStream(): UseChatStreamReturn {
     const [isStreaming, setIsStreaming] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
 
-    const sendMessage = async (userMessage: string, provider: 'azure' | 'openai' | 'claude' = 'azure') => {
+    const sendMessage = async (userMessage: string, provider: 'azure' | 'openai' | 'claude' = 'azure', includeHistory: boolean = false) => {
         setIsStreaming(true);
         setError(null);
+
+        // Prepare history if includeHistory is true, before adding new messages
+        let history: ChatMessage[] = [];
+        if (includeHistory) {
+            // Filter out empty messages and limit to last 20 messages
+            history = messages
+                .filter(msg => msg.content.trim() !== '')
+                .slice(-20); // Limit to last 20 messages
+        }
+
         setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
         setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
 
@@ -39,7 +50,8 @@ export function useChatStream(): UseChatStreamReturn {
                 },
                 body: JSON.stringify({
                     provider,
-                    message: userMessage
+                    message: userMessage,
+                    ...(includeHistory && history.length > 0 && { history })
                 })
             });
 
@@ -101,5 +113,10 @@ export function useChatStream(): UseChatStreamReturn {
         }
     };
 
-    return { messages, sendMessage, isStreaming, error };
+    const clearMessages = () => {
+        setMessages([]);
+        setError(null);
+    };
+
+    return { messages, sendMessage, isStreaming, error, clearMessages };
 }
